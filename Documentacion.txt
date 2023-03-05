@@ -1,0 +1,73 @@
+﻿- Crear un proyecto laravel normalmente
+- Modelo/Tabla mensajes (from_user_id - to_user_id)
+- Crear una notificacion make:notificacion NombreNotificacion
+- Notificar al destinatario $user->notify(new NombreNotificacion($mensaje))
+NOTIFICACION EMAIL
+Personalizar plantilla correo Laravel
+vía Mail
+->subject('Tienes un nuevo mensaje')
+->greeting('Hola comunidad')
+->action('click aquí', route('mensaje.show',$this->mensaje->id))
+
+php artisan vendor:publish --tag=laravel-notificacitions
+Publica en: views/vendor/notifications/email.blade.php
+
+php artisan vendor:publish --tag=laravel-mail
+Publica en: views/vendor/email/* (Componente Message)
+
+En el componete Header (Se muestra la imagen o el texto de los correos enviados)
+En views/vendor/mail/html/defaults.css .logo (Modificar medidas del logo)
+
+Para procesar las notificaciones por colas
+1. Crear y ejecutar la migracion php artisan queue:table
+2. En el .env QUEUE_CONNECTION=database
+3. En NombreNotificacion implements ShouldQueue
+4. Correr php artisan queue:work
+
+NOTIFICACION DATABASE
+1. Crear y ejecutar php artisan notifications:table (Genera una migración)
+2. Definir en NombreNotificacion un nuevo canal 'database' con método toDatabase($notifiable) que retona array
+return [
+	'url'=>route('mensaje.show',$this->mensaje->id), 
+	'mensaje'=> 'Has recibido un mensaje de '.User::find($this->mensaje->from_user_id)->name
+];
+
+BROADCAST 
+SERVIDOR
+1. Habilitar BroadcastServiceProvider en app/config.php
+2. Configurar y ejecutar trabajos de colas
+3. Instalar Pusher composer require pusher/pusher-php-server
+4. Credenciales de pusher en .env (usuario osber01@gmail.com - DeveloperS!)
+5. Crear cuenta de pusher (key app)
+6. BROADCAST_DRIVER=pusher
+
+CLIENTE (LARAVEL ECHO)
+1. Instalar laravel echo npm install --save-dev laravel-echo pusher-js
+2. Ir a resources/js/bootstrap.js (descomentar y compilar)
+3. npm run dev
+
+AÑADIR NUEVO CANAL (BROADCAST)
+1. Registrar nuevo canal en NombreNotificacion
+2. 'broadcast' => toBroadcast return new BroadcastMessage([]);
+3. Importar Illuminate\Notifications\Messages\BroadcastMessage;
+4. En el layout principal
+Después de <script src="{{ mix('js/app.js') }}"></script>
+@auth
+Echo.private('App.Models.User.' + {{auth()->user()->id}})
+    .notification((notification) => {
+        //console.log(notification.type);
+	//Emitir a livewire
+	Livewire.emit('nuevanotificacion');
+    });
+@endauth
+
+En componente livewire
+protected listeners = ['nuevanotificacion'] (funcion púb. con el mismo nombre)
+public function nuevanotificacion(){
+	$this->notificaciones = auth()->user()->notifications;
+        $this->noleidas = auth()->user()->unreadNotifications->count();
+}
+
+
+
+
